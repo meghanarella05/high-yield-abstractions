@@ -1,0 +1,190 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>CES 2111 DS Lab: Module Guide</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><link rel="icon" href="data:,">
+<style>
+:root{--bg:#fff;--fg:#1c1b22;--card:#f3f2f8;--ac:#5b3df5;--code:#e9e6f8;--mut:#666;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#13121a;--fg:#ecebf4;--card:#1d1c28;--ac:#9d8bff;--code:#262438;--mut:#a09fb3}}
+:root[data-theme="dark"]{--bg:#13121a;--fg:#ecebf4;--card:#1d1c28;--ac:#9d8bff;--code:#262438;--mut:#a09fb3}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif;padding:12px;max-width:760px;margin:auto}
+h1{font-size:20px;margin:6px 0}nav{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+nav a,button{background:var(--card);color:var(--ac);border:1px solid var(--ac);border-radius:14px;padding:3px 10px;font-size:13px;text-decoration:none}
+details{background:var(--card);border-radius:10px;margin:10px 0;padding:8px 12px}summary{font-weight:700;cursor:pointer}
+.a{border-left:4px solid var(--ac);padding-left:8px;margin:8px 0}ol{padding-left:20px;margin:6px 0}
+pre{background:var(--code);padding:8px;border-radius:8px;overflow-x:auto;font-size:12.5px;line-height:1.4;margin:8px 0}
+.cover pre:not(.rv){filter:blur(7px)}.x{color:var(--mut);font-size:13.5px}.x b{color:var(--fg)}
+</style></head><body>
+<h1>CES 2111 Data Structures Lab: full syllabus, as modules</h1>
+<p class="x">Each module = <b>core abstraction</b> → <b>derive the algorithm</b> → <b>manual exercises</b> (+ code). Start with Core: it is the 20% everything else leans on. <button id="cv">Cover code (drill mode)</button> tap a block to reveal.</p>
+<nav id="nav"></nav><div id="app"></div>
+<script>
+const R=String.raw;
+const M=[
+{id:'c',t:'Core (the 20%): hand-write ×3',a:'Everything = <b>SLOT + MOVE + STOP</b>. Array: a[i], i++, i&lt;n. List: node, p=p-&gt;next, p==NULL. Tree: node, left/right, NULL. Graph: vertex, neighbours, visited. Recursion = same thing, the call stack remembers where you were.',
+s:['Draw 3 boxes and arrows first.','Write the walk loop (SLOT/MOVE/STOP).','Ask: what must I remember while walking? (prev? tail? parent?)','Rewire safely: new node points to the old chain FIRST, then old points to new.','Test 3 cases: empty, one element, last element.'],
+c:R`typedef struct Node{int data;struct Node*next;}Node;
+Node*createNode(int d){Node*n=malloc(sizeof(Node));n->data=d;n->next=NULL;return n;}
+Node*insertEnd(Node*h,int d){Node*n=createNode(d);if(!h)return n;
+ Node*c=h;while(c->next)c=c->next;c->next=n;return h;}
+Node*delVal(Node*h,int d){Node*pr=NULL,*c=h;            /* walk with prev */
+ while(c&&c->data!=d){pr=c;c=c->next;}
+ if(!c){printf("Not found\n");return h;}
+ if(!pr)h=c->next;else pr->next=c->next;free(c);return h;}
+void show(Node*h){for(;h;h=h->next)printf("%d -> ",h->data);printf("NULL\n");}
+/* recursion template: base case + shrink */
+int f(Node*h){if(!h)return 0;return 1+f(h->next);}`,
+x:'Every later module is a variation of these 5 functions + the recursion template.'},
+{id:'l1',t:'L1 Arrays: searching and sorting',a:'Array = contiguous slots, index = position. Every algorithm is a loop with an <b>invariant</b>.',
+s:['Linear: scan, stop on match.','Binary: sorted → keep [lo,hi], compare mid, throw away half.','Bubble: adjacent swap; biggest sinks to the end each pass.','Selection: find min of the rest, put it at i.','Insertion: grow sorted prefix; shift bigger items right, drop key in the gap.','Count comparisons/swaps: put a counter inside the if / swap.'],
+c:R`for(i=0;i<n-1;i++)for(j=0;j<n-1-i;j++)if(a[j]>a[j+1]){t=a[j];a[j]=a[j+1];a[j+1]=t;} /*bubble*/
+for(i=0;i<n-1;i++){m=i;for(j=i+1;j<n;j++)if(a[j]<a[m])m=j;t=a[i];a[i]=a[m];a[m]=t;} /*selection*/
+for(i=1;i<n;i++){k=a[i];j=i-1;while(j>=0&&a[j]>k){a[j+1]=a[j];j--;}a[j+1]=k;} /*insertion*/
+lo=0;hi=n-1;while(lo<=hi){mid=(lo+hi)/2;if(a[mid]==key)return mid;
+ else if(a[mid]<key)lo=mid+1;else hi=mid-1;}return -1; /*binary*/
+for(i=0;i<r;i++)for(j=0;j<c;j++){C[i][j]=0;for(k=0;k<m;k++)C[i][j]+=A[i][k]*B[k][j];} /*A×B*/
+/* magic square: target=sum of row 0; check every row, column, both diagonals equal target */`,
+x:'<b>Manual:</b> largest element (solved), linear search, binary search, 3 sorts. <b>Add:</b> compare counts, C=max(A,B) (C[i][j]=A&gt;B?A:B), multiply/add, magic square.'},
+{id:'l2',t:'L2 Pointers, recursion, DMA',a:'Pointer = a variable holding an address. <b>a[i] ≡ *(a+i)</b>. Recursion = solve a smaller copy. malloc = ask for slots at runtime, free = return them.',
+s:['Smallest via pointer: m=a; walk p; if *p&lt;*m then m=p.','Recursive selection sort: base n≤1; find min, swap into a[0], recurse on (a+1, n-1).','2D dynamic: array of row pointers, malloc each row; access *(*(m+i)+j).','Hanoi: move n-1 to spare, move disk, move n-1 onto target.','Election: calloc votes[cand+1] (index 0 = foul), calloc names; invalid vote → votes[0]++.'],
+c:R`int*smallest(int*a,int n){int*m=a;for(int*p=a+1;p<a+n;p++)if(*p<*m)m=p;return m;}
+void rsel(int*a,int n){if(n<=1)return;int*m=a;
+ for(int*p=a+1;p<a+n;p++)if(*p<*m)m=p;
+ int t=*a;*a=*m;*m=t;rsel(a+1,n-1);}
+int**m=malloc(r*sizeof(int*));for(i=0;i<r;i++)*(m+i)=malloc(c*sizeof(int));
+void hanoi(int n,char a,char b,char c){if(n==0)return;
+ hanoi(n-1,a,c,b);printf("%c->%c\n",a,c);hanoi(n-1,b,a,c);}
+int*votes=calloc(cand+1,sizeof(int));char**name=calloc(cand+1,sizeof(char*));
+if(v<1||v>cand)votes[0]++;else votes[v]++;`,
+x:'<b>Manual:</b> smallest via pointers + malloc array; recursive selection sort; dynamic matrix product. <b>Add:</b> Hanoi, CR election (no struct, calloc).'},
+{id:'l3',t:'L3 Strings and structures',a:'String = char array ending in \\0, so every operation is a <b>walk to \\0</b>. Struct = bundle of fields; array of struct = table; <b>p-&gt;f</b> = (*p).f.',
+s:['length: count until \\0.','concat: walk to end of a, copy b including its \\0.','compare: walk while equal; return difference.','insert substring: shift tail right by len(sub) from the END, then copy sub in.','delete substring: shift tail left over the gap.','Sort structs: same bubble sort, compare .roll, swap whole structs.','Sparse transpose: triplets (row,col,val); fast = count per column, compute start positions, place directly.'],
+c:R`int len(char*s){int i=0;while(s[i])i++;return i;}
+void cat(char*a,char*b){int i=len(a),j=0;while((a[i++]=b[j++]));}
+int cmp(char*a,char*b){int i=0;while(a[i]&&a[i]==b[i])i++;return a[i]-b[i];}
+void ins(char*s,char*sub,int p){int n=len(s),m=len(sub);
+ for(int i=n;i>=p;i--)s[i+m]=s[i];for(int i=0;i<m;i++)s[p+i]=sub[i];}
+void del(char*s,int p,int m){int i=p;while((s[i]=s[i+m]))i++;}
+typedef struct{char name[50];int roll;float marks;}St;
+St*best(St*s,int n){St*b=s;for(St*p=s+1;p<s+n;p++)if(p->marks>b->marks)b=p;return b;}
+typedef struct{int r,c,v;}T; /* a[0]=rows,cols,count */
+void ftrans(T*a,T*b){int n=a[0].v,cnt[50]={0},pos[50];
+ b[0].r=a[0].c;b[0].c=a[0].r;b[0].v=n;
+ for(int i=1;i<=n;i++)cnt[a[i].c]++;
+ pos[0]=1;for(int i=1;i<a[0].c;i++)pos[i]=pos[i-1]+cnt[i-1];
+ for(int i=1;i<=n;i++){int p=pos[a[i].c]++;b[p].r=a[i].c;b[p].c=a[i].r;b[p].v=a[i].v;}}`,
+x:'<b>Manual:</b> 5 string ops without string.h; student struct read/display/sort by roll; pointer-to-struct read + highest marks. <b>Add:</b> simple and fast sparse transpose.'},
+{id:'l4',t:'L4 Singly linked list',a:'Node = data + link. List = head pointer. <b>Insert/delete = "find the node before the spot", then rewire.</b>',
+s:['Insert after x: walk to x; n-&gt;next=x-&gt;next; x-&gt;next=n.','Insert before x: walk with prev (core delete pattern); if prev NULL, head changes.','Reverse: 3 pointers prev/cur/next; flip each link.','Sort: bubble sort swapping data fields.','Delete alternate: cur drops cur-&gt;next, hop.','Sorted insert: walk while c-&gt;data&lt;d, then insert between prev and c.','Merge sorted: smaller head wins, recurse on the rest (relinks, no new nodes).'],
+c:R`Node*n=createNode(d);Node*pr=NULL,*c=head;
+while(c&&c->data<d){pr=c;c=c->next;}           /* sorted insert; for "before x" use c->data!=x */
+n->next=c;if(pr)pr->next=n;else head=n;
+Node*pr=NULL,*c=head,*nx;while(c){nx=c->next;c->next=pr;pr=c;c=nx;}head=pr; /*reverse*/
+for(Node*c=head;c&&c->next;c=c->next){Node*t=c->next;c->next=t->next;free(t);} /*alternate*/
+for(i=head;i;i=i->next)for(j=head;j->next;j=j->next)
+ if(j->data>j->next->data){t=j->data;j->data=j->next->data;j->next->data=t;}
+Node*merge(Node*x,Node*y){if(!x)return y;if(!y)return x;
+ if(x->data<=y->data){x->next=merge(x->next,y);return x;}
+ y->next=merge(x,y->next);return y;}
+Node*a=x,*b=y;while(a&&b){Node*an=a->next,*bn=b->next;a->next=b;b->next=an?an:bn;a=an;b=bn;} /*interleave*/`,
+x:'<b>Manual:</b> insert before/after, delete, traverse, reverse, sort, delete alternate, sorted insert. <b>Add:</b> recursive create/traverse, merge sorted, interleave.'},
+{id:'l5',t:'L5 Doubly linked list',a:'Node = prev + data + next. Every change touches <b>two neighbours</b>. A header node and head+tail pointers kill the edge cases.',
+s:['Insert after cur: 4 assignments, new→old first.','Delete cur: neighbours bypass it; fix head/tail if at an end.','Insert at position k: walk k-1 steps, insert after (k=1 → new head).','Reverse traverse: start at tail, follow prev.','Concatenate: walk to tail of X1, tail-&gt;next=X2, X2-&gt;prev=tail.','Long-int add: digits in nodes, walk from tails with carry, push result digit to front.'],
+c:R`typedef struct D{int data;struct D*prev,*next;}D;
+n->next=cur->next;n->prev=cur;if(cur->next)cur->next->prev=n;cur->next=n;   /*insert after*/
+if(cur->prev)cur->prev->next=cur->next;else head=cur->next;                  /*delete cur*/
+if(cur->next)cur->next->prev=cur->prev;else tail=cur->prev;free(cur);
+for(p=tail;p;p=p->prev)printf("%d ",p->data);                                /*reverse walk*/
+if(!x1)return x2;D*t=x1;while(t->next)t=t->next;t->next=x2;if(x2)x2->prev=t;return x1;
+s=a->d+b->d+carry;digit=s%10;carry=s/10;  /* then a=a->prev; b=b->prev; */`,
+x:'<b>Manual:</b> menu with rear insert/delete, insert/delete at position, before/after value, forward/reverse traverse; concatenate X1+X2. <b>Add:</b> union/intersection, long integer addition.'},
+{id:'l6',t:'L6 Circular lists and polynomials',a:'Circular: last-&gt;next=first, so STOP becomes "back at first" (use do-while). Polynomial = list of (coef, exp) sorted by exp descending, so adding = <b>merge</b>.',
+s:['Insert end with first/last: n-&gt;next=first; last-&gt;next=n; last=n.','Delete front: first=first-&gt;next; last-&gt;next=first. Delete end needs the node before last.','Poly add: compare exponents; equal → add coefs, bigger → copy it; then copy leftovers.','Poly multiply: every term × every term, addTerm(coef product, exp sum) merging equal exponents.','Washing machine: p=p-&gt;next after each user’s time runs out.'],
+c:R`void addEnd(int d){Node*n=createNode(d);
+ if(!first){first=last=n;n->next=n;}else{n->next=first;last->next=n;last=n;}}
+void delFront(){if(!first)return;Node*t=first;
+ if(first==last)first=last=NULL;else{first=first->next;last->next=first;}free(t);}
+void delEnd(){if(!first)return;if(first==last){free(first);first=last=NULL;return;}
+ Node*p=first;while(p->next!=last)p=p->next;p->next=first;free(last);last=p;}
+Node*p=first;if(p)do{printf("%d ",p->data);p=p->next;}while(p!=first);
+while(a&&b){if(a->e==b->e){add(a->c+b->c,a->e);a=a->next;b=b->next;}
+ else if(a->e>b->e){add(a->c,a->e);a=a->next;}else{add(b->c,b->e);b=b->next;}}
+/* then: while(a) add(a...); while(b) add(b...); */`,
+x:'<b>Manual:</b> circular SLL with first/last; add two polynomials in DLLs. <b>Add:</b> circular DLL menu, polynomial multiply with header node, washing-machine round robin.'},
+{id:'l7',t:'L7 Stacks',a:'LIFO: only the top is touched. Use a stack whenever "the most recent unfinished thing" matters (brackets, operators, undo).',
+s:['Array: top=-1; push s[++top]; pop s[top--]. Linked: insert/delete at head.','Palindrome: push all chars, pop and compare with the string from the start.','Brackets: push openers; closer must match pop; end with empty stack.','Infix→postfix: operand→output; ( push; ) pop to (; operator pops while top prec ≥ it, then push; at end pop all.','Postfix eval: operand push; operator pops b then a, pushes a op b.','Prefix: reverse infix, swap ( ), convert, reverse (pop only on STRICTLY higher prec). Eval prefix: scan right→left, first pop is the left operand.','Postfix→infix: push strings, operator makes "(a op b)".'],
+c:R`int prec(char c){return c=='^'?3:(c=='*'||c=='/')?2:(c=='+'||c=='-')?1:0;}
+void post(char*in,char*out){char s[100];int t=-1,k=0;
+ for(;*in;in++){char c=*in;
+  if(isalnum(c))out[k++]=c;
+  else if(c=='(')s[++t]=c;
+  else if(c==')'){while(t>=0&&s[t]!='(')out[k++]=s[t--];t--;}
+  else{while(t>=0&&prec(s[t])>=prec(c))out[k++]=s[t--];s[++t]=c;}}
+ while(t>=0)out[k++]=s[t--];out[k]=0;}
+for(;*e;e++){if(isdigit(*e))s[++t]=*e-'0';
+ else{int b=s[t--],a=s[t--];s[++t]=*e=='+'?a+b:*e=='-'?a-b:*e=='*'?a*b:a/b;}}`,
+x:'<b>Manual:</b> palindrome, bracket matching (array); infix→postfix and postfix eval (linked). <b>Add:</b> k stacks in one array, infix→prefix, postfix→infix, prefix eval.'},
+{id:'l8',t:'L8 Queues',a:'FIFO: add at rear, remove at front. Circular = indices wrap with <b>% N</b> so freed slots get reused.',
+s:['Simple array: front/rear; the manual one wastes space after dequeues.','Circular: rear=(rear+1)%N; front=(front+1)%N; track count to tell full from empty.','Linked: front/rear pointers; when front becomes NULL set rear=NULL.','Priority/patients: insert in sorted position (sorted-list insert from L4).','Queue from two stacks: enqueue → push s1; dequeue → if s2 empty move all s1→s2, pop s2.','n queues in one array: give each a segment of size m/n and run a circular queue inside it.'],
+c:R`int q[N],f=0,r=-1,cnt=0;
+void enq(int x){if(cnt==N){puts("full");return;}r=(r+1)%N;q[r]=x;cnt++;}
+int deq(){if(!cnt){puts("empty");return -1;}int x=q[f];f=(f+1)%N;cnt--;return x;}
+void lenq(int d){Node*n=createNode(d);if(!rear)front=rear=n;else{rear->next=n;rear=n;}}
+int ldeq(){Node*t=front;int x=t->data;front=front->next;if(!front)rear=NULL;free(t);return x;}
+/* two stacks */ void enqueue(int x){push(&s1,x);}
+int dequeue(){if(empty(&s2))while(!empty(&s1))push(&s2,pop(&s1));return pop(&s2);}`,
+x:'<b>Manual:</b> printer queue (array), circular queue, linked queue, queue of patient structs. <b>Add:</b> queue via two stacks, n queues in A(1:m) with ADDQ/DELETEQ/QUEUE_FULL.'},
+{id:'l9',t:'L9 Binary tree and traversals',a:'Tree = node + two subtrees. <b>The recursion mirrors the structure:</b> f(t) = base for NULL, combine f(left) and f(right). Orders differ only in where the visit sits.',
+s:['Pre: visit, L, R. In: L, visit, R. Post: L, R, visit.','Iterative inorder: go left pushing, pop = visit, go right.','Iterative preorder: push root; pop, visit, push right then left.','Iterative postorder: preorder as root-right-left into 2nd stack, then pop it.','Height = 1+max(h(L),h(R)); leaves: both children NULL → 1.','Ancestors: if x found below, print this node on the way back up. Parent: node whose child holds x.','Equal / mirror / copy: same template, two trees at once (mirror crosses L with R).','Create: read value, -1 → NULL, else recurse left then right.'],
+c:R`typedef struct T{int d;struct T*l,*r;}T;
+void in(T*t){if(!t)return;in(t->l);printf("%d ",t->d);in(t->r);}
+int height(T*t){if(!t)return 0;int a=height(t->l),b=height(t->r);return 1+(a>b?a:b);}
+int leaves(T*t){return !t?0:(!t->l&&!t->r)?1:leaves(t->l)+leaves(t->r);}
+int anc(T*t,int x){if(!t)return 0;if(t->d==x)return 1;
+ if(anc(t->l,x)||anc(t->r,x)){printf("%d ",t->d);return 1;}return 0;}
+int same(T*a,T*b){if(!a&&!b)return 1;if(!a||!b)return 0;return a->d==b->d&&same(a->l,b->l)&&same(a->r,b->r);}
+int mirror(T*a,T*b){if(!a&&!b)return 1;if(!a||!b)return 0;return a->d==b->d&&mirror(a->l,b->r)&&mirror(a->r,b->l);}
+T*copy(T*t){if(!t)return NULL;T*n=malloc(sizeof(T));n->d=t->d;n->l=copy(t->l);n->r=copy(t->r);return n;}
+T*st[100];int sp=0;T*c=root;                                    /*iterative inorder*/
+while(c||sp){while(c){st[sp++]=c;c=c->l;}c=st[--sp];printf("%d ",c->d);c=c->r;}
+st[sp++]=root;while(sp){T*c=st[--sp];printf("%d ",c->d);if(c->r)st[sp++]=c->r;if(c->l)st[sp++]=c->l;} /*iter. preorder*/`,
+x:'<b>Manual:</b> 3 iterative traversals, parent, height, ancestors, leaf count; recursive create + level-order print. <b>Add:</b> equality, mirror, copy.'},
+{id:'l10',t:'L10 BST and AVL',a:'BST rule: <b>left &lt; node &lt; right</b>, so search/insert/min/max follow ONE path. AVL = BST + keep |height(L)-height(R)| ≤ 1 using rotations.',
+s:['Search/insert: go left if smaller, right if bigger.','Min: keep going left. Max: keep going right.','Delete: 0 children → remove; 1 child → child takes its place; 2 children → copy inorder successor (min of right), delete that.','AVL: insert like BST, update heights on the way back, compute bf=h(L)-h(R).','bf&gt;1: left heavy (LL → rotate right; LR → rotate left on child, then right). bf&lt;-1 mirrors it (RR, RL).','Level order: queue. BST→sorted DLL: inorder with a "prev" pointer linking prev-&gt;r=t, t-&gt;l=prev.'],
+c:R`T*ins(T*t,int x){if(!t){T*n=calloc(1,sizeof(T));n->d=x;return n;}
+ if(x<t->d)t->l=ins(t->l,x);else if(x>t->d)t->r=ins(t->r,x);return t;}
+T*mn(T*t){while(t->l)t=t->l;return t;}
+T*del(T*t,int x){if(!t)return NULL;
+ if(x<t->d)t->l=del(t->l,x);else if(x>t->d)t->r=del(t->r,x);
+ else{if(!t->l){T*r=t->r;free(t);return r;}if(!t->r){T*l=t->l;free(t);return l;}
+  T*s=mn(t->r);t->d=s->d;t->r=del(t->r,s->d);}return t;}
+/* AVL: node has int h; h(NULL)=0; upd(t): t->h=1+max(h(t->l),h(t->r)) */
+T*rotR(T*y){T*x=y->l;y->l=x->r;x->r=y;upd(y);upd(x);return x;}
+T*rotL(T*x){T*y=x->r;x->r=y->l;y->l=x;upd(x);upd(y);return y;}
+/* after BST insert + upd(t): bf=h(t->l)-h(t->r) */
+if(bf>1&&x<t->l->d)return rotR(t);
+if(bf<-1&&x>t->r->d)return rotL(t);
+if(bf>1&&x>t->l->d){t->l=rotL(t->l);return rotR(t);}
+if(bf<-1&&x<t->r->d){t->r=rotR(t->r);return rotL(t);}`,
+x:'<b>Manual:</b> BST create + 3 traversals, search, delete, min/max, AVL insert. <b>Add:</b> level order, BST→sorted DLL, AVL insert (listed twice in the manual).'},
+{id:'l11',t:'L11 Graphs: representation, BFS, DFS',a:'Graph = vertices + edges. Matrix g[u][v] (dense) or adjacency list (sparse). Traversal = tree traversal + a <b>visited</b> array so cycles don’t loop forever.',
+s:['Undirected edge: set g[u][v] and g[v][u]. Directed: only g[u][v].','List: adj[u] is a linked list; add edge = insert at head.','BFS = queue (level by level). DFS = recursion/stack (deep first).','Undirected cycle (DFS): visited neighbour that is not my parent → cycle.','Directed cycle: also keep rs[] = "on current path"; neighbour with rs=1 → cycle; set rs[u]=0 on exit.','Bipartite (BFS): colour start 0, neighbours 1-colour; same colour on an edge → not bipartite.'],
+c:R`int g[N][N],vis[N],n;
+void bfs(int s){int q[N],f=0,r=0;vis[s]=1;q[r++]=s;
+ while(f<r){int u=q[f++];printf("%d ",u);
+  for(int v=0;v<n;v++)if(g[u][v]&&!vis[v]){vis[v]=1;q[r++]=v;}}}
+void dfs(int u){vis[u]=1;printf("%d ",u);for(int v=0;v<n;v++)if(g[u][v]&&!vis[v])dfs(v);}
+int cyc(int u,int p){vis[u]=1;for(int v=0;v<n;v++)if(g[u][v]){
+ if(!vis[v]){if(cyc(v,u))return 1;}else if(v!=p)return 1;}return 0;}
+int dcyc(int u){vis[u]=rs[u]=1;for(int v=0;v<n;v++)if(g[u][v]){
+ if((!vis[v]&&dcyc(v))||rs[v])return 1;}rs[u]=0;return 0;}
+typedef struct E{int v;struct E*n;}E;E*adj[N];
+void add(int u,int v){E*e=malloc(sizeof(E));e->v=v;e->n=adj[u];adj[u]=e;}`,
+x:'<b>Manual:</b> directed/undirected via matrix and list, BFS, DFS. <b>Add:</b> cycle in undirected (DFS), cycle in directed (rec. stack), bipartite (BFS).'}];
+const nav=document.getElementById('nav'),app=document.getElementById('app');
+M.forEach(m=>{const a=document.createElement('a');a.href='#'+m.id;a.textContent=m.id=='c'?'Core':m.id.toUpperCase();nav.append(a);
+const d=document.createElement('details');d.id=m.id;if(m.id=='c')d.open=true;
+d.innerHTML='<summary>'+m.t+'</summary><div class="a">'+m.a+'</div><b>Derive it</b><ol>'+m.s.map(s=>'<li>'+s+'</li>').join('')+'</ol><b>Code</b><pre></pre><div class="x">'+m.x+'</div>';
+d.querySelector('pre').textContent=m.c;app.append(d)});
+function op(){const e=document.getElementById(location.hash.slice(1));if(e&&e.tagName=='DETAILS')e.open=true}
+addEventListener('hashchange',op);op();
+document.querySelectorAll('pre').forEach(p=>p.onclick=()=>p.classList.toggle('rv'));
+cv.onclick=()=>document.body.classList.toggle('cover');
+</script></body></html>

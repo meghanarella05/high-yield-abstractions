@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DSCO Module Guide</title>
+<style>
+:root{--bg:#fafaf7;--fg:#1c1c1a;--mut:#6b6b64;--card:#fff;--bd:#dcdcd2;--a:#0b6e4f;--d:#9a4d00;--e:#1f4fa3;--c:#a3121f}
+@media(prefers-color-scheme:dark){:root{--bg:#141413;--fg:#ecece6;--mut:#9a9a90;--card:#1e1e1c;--bd:#35352f;--a:#4fd1a0;--d:#ffb057;--e:#7fa8ff;--c:#ff7b86}}
+*{box-sizing:border-box}body{margin:0;padding:12px;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif;max-width:760px;margin:auto}
+h1{font-size:20px;margin:8px 0}p.s{color:var(--mut);margin:0 0 12px;font-size:13px}
+details{background:var(--card);border:1px solid var(--bd);border-radius:10px;margin:8px 0}
+summary{padding:12px;font-weight:700;cursor:pointer}
+.b{padding:0 12px 12px}.b>div{margin:8px 0;padding:8px 10px;border-left:4px solid;border-radius:4px;background:rgba(128,128,128,.07)}
+.a{border-color:var(--a)}.d{border-color:var(--d)}.e{border-color:var(--e)}.c{border-color:var(--c)}
+b.t{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px}
+.a b.t{color:var(--a)}.d b.t{color:var(--d)}.e b.t{color:var(--e)}.c b.t{color:var(--c)}
+ol,ul{margin:2px 0;padding-left:20px}code,pre{font:13px ui-monospace,monospace}pre{background:rgba(128,128,128,.12);padding:8px;border-radius:6px;overflow-x:auto;margin:4px 0}
+.k{color:var(--mut);font-size:12px}
+</style></head><body>
+<h1>DSCO (CES 2104) – Module Guide</h1>
+<p class="s">Each module = <b>core abstraction</b> → <b>derive the algorithm</b> → <b>worked examples</b> (Q# = your model-answers file) → <b>check</b>. Read the abstraction, then rewrite the derivation from memory 3×.</p>
+
+<details open><summary>M1 · Minimization (K-map, PI/EPI, NAND/NOR) · Q1–7</summary><div class="b">
+<div class="a"><b class="t">Core abstraction</b>A function is a set of minterms. Two minterms differing in 1 bit merge and the changing variable disappears. K-map = a picture where "differ by 1 bit" = physically adjacent (wraps around).</div>
+<div class="d"><b class="t">Derive</b><ol><li>Group 1s in powers of 2 (1,2,4,8), as big as possible, wrap edges.</li><li>Variable that stays constant stays; the one that changes vanishes. 1 = plain, 0 = primed.</li><li>EPI = group covering a minterm no other group covers → mark it first, then cover leftovers with fewest groups.</li><li>Don't-care: use as 1 only if it enlarges a group, else 0.</li><li>POS: group the 0s → F' → De Morgan (flip every literal, swap AND/OR).</li><li>SOP → NAND-NAND (same expression, every gate NAND). POS → NOR-NOR.</li></ol></div>
+<div class="e"><b class="t">Examples</b>Q1 Σm(0,1,2,5,8,9,10): B'C' + B'D' + A'C'D, all 3 are EPI (m9, m2/m10, m5 unique).<br>Q2 Σm(1,3,7,11,15)+d(0,2,5): A'B' + CD (d5 unused).<br>Q4 POS of Q1: (B'+D)(C'+D')(A'+B').<br>Q5 AB+CD = NAND(NAND(A,B),NAND(C,D)).<br>Q6 NAND universal: NOT = NAND(A,A); AND = NOT after NAND; OR = NAND(A',B').</div>
+<div class="c"><b class="t">Check</b>Every 1 covered? Group sizes powers of 2? Any group still enlargeable (then not prime)? Spot-check one minterm by substituting.</div>
+</div></details>
+
+<details><summary>M2 · Arithmetic circuits (adders, comparator, multiplier) · Q8–13</summary><div class="b">
+<div class="a"><b class="t">Core abstraction</b>Adding bits = XOR (sum) + AND/majority (carry). Wider arithmetic = the same cell repeated, with carry wired stage to stage.</div>
+<div class="d"><b class="t">Derive</b><ol><li>HA: S = A⊕B, C = AB.</li><li>FA: S = A⊕B⊕Cin, Cout = AB + Cin(A⊕B) = two HAs + OR on carries.</li><li>Ripple n-bit: Cout(i) → Cin(i+1); delay ≈ n × carry delay. Fix: look-ahead, Gi = AiBi, Pi = Ai⊕Bi, C(i+1) = Gi + PiCi.</li><li>Add/Sub: B' = B⊕M, Cin = M (M=1 gives A + B' + 1 = A−B). Signed overflow V = C4⊕C3.</li><li>BCD: binary add, then if sum &gt; 9 or carry add 0110. C = K + Z3Z2 + Z3Z1.</li><li>Comparator: xi = XNOR(Ai,Bi); scan from MSB, first unequal bit decides. A&gt;B = A3B3' + x3A2B2' + x3x2A1B1' + …</li><li>4×4 multiplier: 16 ANDs for ai·bj, shift rows, add with ~4 HA + 8 FA; output P7..P0.</li></ol></div>
+<div class="e"><b class="t">Examples</b>Q11 8+5: 1000+0101 = 1101 → Z3Z2=1 → +0110 = 1 0011 → BCD "13".<br>Q8 FA truth: S=1 for 001,010,100,111; Cout=1 for 011,101,110,111.</div>
+<div class="c"><b class="t">Check</b>Plug A=1,B=1,Cin=1 → S=1, Cout=1. Why 6 in BCD? 16 codes minus 10 used.</div>
+</div></details>
+
+<details><summary>M3 · MUX / Decoder / Encoder as function generators · Q15–20</summary><div class="b">
+<div class="a"><b class="t">Core abstraction</b>MUX = selects one input by address. Decoder = generates every minterm (one-hot). Encoder = reverse of decoder. So any function = a MUX with chosen data inputs, or a decoder + OR of its minterms.</div>
+<div class="d"><b class="t">Derive</b><ol><li>n-variable F on a 2^(n−1):1 MUX: first n−1 variables are selects, last variable (C) is data.</li><li>For each select combo look at the minterm pair: (0,0)→0, (1,1)→1, (0,1)→C, (1,0)→C'. That is the data input.</li><li>Decoder + OR: write Σm list, OR those outputs (NAND if outputs are active-low).</li><li>Bigger from smaller: decoder → top bit drives enables (A3' to first, A3 to second). MUX 16:1 = 4 MUX at level 1 (S1S0) + 1 at level 2 (S3S2).</li><li>Encoder: Yk = OR of inputs whose index has bit k set. Priority encoder: higher input masks lower (X don't care), add valid V = OR of all.</li></ol></div>
+<div class="e"><b class="t">Examples</b>Q16 F=Σm(1,2,6,7), S1=A, S0=B: I0=C, I1=C', I2=0, I3=1.<br>Q19 Full adder on 3:8: S = Y1+Y2+Y4+Y7, Cout = Y3+Y5+Y6+Y7.<br>Q20 4:2 encoder Y1 = D2+D3, Y0 = D1+D3; priority: Y1 = D3+D2, Y0 = D3+D2'D1.</div>
+<div class="c"><b class="t">Check</b>Test one select combination by hand, compare to truth table.</div>
+</div></details>
+
+<details><summary>M4 · Verilog (combinational vs clocked) · Q14, 21–24, 39–42</summary><div class="b">
+<div class="a"><b class="t">Core abstraction</b>Verilog describes hardware, not a program. Two kinds only: combinational (output follows inputs) and clocked (state changes at an edge). wire = connection, reg = assigned inside always.</div>
+<div class="d"><b class="t">Derive (template choice)</b><ol><li>Simple equation → <code>assign y = ...;</code></li><li>Combinational with if/case → <code>always @(*)</code>, use <code>=</code>, assign every output in every branch (else a latch appears).</li><li>Flip-flop/register/counter/FSM state → <code>always @(posedge clk)</code>, use <code>&lt;=</code>. Async reset: add <code>or posedge rst</code> to the list.</li><li>Big circuit from small → structural: instantiate modules, internal nets as wires.</li><li>FSM = 3 parts: state register (clocked), next-state logic (case), output logic.</li></ol></div>
+<div class="e"><b class="t">Examples</b><pre>// Q14 behavioural adder
+assign {cout, s} = a + b + cin;
+// Q39 async-clear D FF
+always @(posedge clk or posedge clr)
+  if (clr) Q &lt;= 0; else Q &lt;= D;
+// Q41 shift reg
+else Q &lt;= {Q[2:0], din};
+// Q42 FSM next-state
+S3: begin next = x ? S1 : S2; z = x; end</pre>Q21 4:1 MUX with if-else and case; Q22 2:4 decoder: Y=0 default, then case(A) if E. Q40: <code>q1&lt;=d; q2&lt;=q1;</code> is 2-stage shift; with <code>=</code> it collapses.</div>
+<div class="c"><b class="t">Check</b>Missing else/default (latch)? <code>=</code> in clocked block? reg driven by assign? Port widths match?</div>
+</div></details>
+
+<details><summary>M5 · Memory elements: latch → flip-flop → conversions · Q25–29</summary><div class="b">
+<div class="a"><b class="t">Core abstraction</b>Memory = feedback loop. Latch is level-sensitive (transparent while enable is on); flip-flop is edge-triggered (two latches, master-slave). Combinational = no state, sequential = state.</div>
+<div class="d"><b class="t">Derive</b><ol><li>SR (NOR): 00 hold, 10 set, 01 reset, 11 invalid. NAND version is active-low.</li><li>Remove invalid: D latch, S = D, R = D'.</li><li>JK = SR where 11 toggles. Race-around: J=K=1 with level clock toggles repeatedly. Cure: master-slave or edge trigger.</li><li>Characteristic equations: D: Q+ = D; T: Q+ = T⊕Q; JK: Q+ = JQ' + K'Q; SR: Q+ = S + R'Q.</li><li>Conversion: write excitation table of the given FF, express its inputs in terms of the wanted input and Q (K-map if needed).</li></ol></div>
+<div class="e"><b class="t">Examples</b>Q29 JK excitation 0→0: J=0,K=X; 0→1: 1,X; 1→0: X,1; 1→1: X,0. So JK→D: J=D, K=D'. JK→T: J=K=T. D→T: D = T⊕Q.</div>
+<div class="c"><b class="t">Check</b>Apply every input combination to your converted FF and compare with target characteristic equation.</div>
+</div></details>
+
+<details><summary>M6 · Registers and counters · Q30–35</summary><div class="b">
+<div class="a"><b class="t">Core abstraction</b>A counter is an FSM whose state is the output. A shift register is FFs chained so each clock moves data one place. The only design question: when does each bit toggle?</div>
+<div class="d"><b class="t">Derive (synchronous counter)</b><ol><li>Write the sequence as present → next state table.</li><li>For T flip-flops: T = Q ⊕ Q+ (1 where bit changes). JK: J=K=T.</li><li>Unused states = don't care, K-map each T.</li><li>Shortcut: up counter, bit i toggles when all lower bits are 1; down counter, when all lower bits are 0. Up/down with M: Ti = M·(lower all 1) + M'·(lower all 0).</li><li>Ring: Q3→D0, preset 1000, n states. Johnson: Q3'→D0, start 0000, 2n states.</li><li>Ripple: CLK to FF0 only, each next FF clocked by previous Q; delay adds up.</li></ol></div>
+<div class="e"><b class="t">Examples</b>Q32 3-bit up/down: T0=1, T1=M·Q0+M'·Q0', T2=M·Q1Q0+M'·Q1'Q0'.<br>Q33 mod-6: T0=1, T1=Q2'Q0, T2=Q0(Q1+Q2).<br>Q31 Johnson: 0000→1000→1100→1110→1111→0111→0011→0001.<br>Q35 ring from 2-bit counter + 2:4 decoder.</div>
+<div class="c"><b class="t">Check</b>Simulate the equations from 000 through the sequence and the two unused states (they should fall back in).</div>
+</div></details>
+
+<details><summary>M7 · FSM design (Mealy/Moore, sequence detector) · Q36–38</summary><div class="b">
+<div class="a"><b class="t">Core abstraction</b>State = how much of the pattern you have matched so far. Mealy: output on arcs (state + input). Moore: output on the state only (usually one extra state, one clock later).</div>
+<div class="d"><b class="t">Derive</b><ol><li>Word problem → state diagram: one state per matched prefix.</li><li>On a mismatch go to the state of the longest suffix that still matches (this gives overlapping).</li><li>State table → minimise → binary assignment.</li><li>Pick FF type, excitation table (D: D = Q+).</li><li>K-map the FF inputs and output → draw circuit → simulate.</li></ol></div>
+<div class="e"><b class="t">Examples</b>Q36 1011 Mealy overlapping: S0..S3 = 00,01,10,11. S3 on 1 → output 1, go to S1. D0 = X, D1 = Q0X' + Q1Q0'X, Z = Q1Q0X. Q42 is the Verilog of it.</div>
+<div class="c"><b class="t">Check</b>Feed 1011011 and confirm output 1 at the 4th and 7th bit.</div>
+</div></details>
+
+<details><summary>M8 · Instruction set architecture · Q43–49</summary><div class="b">
+<div class="a"><b class="t">Core abstraction</b>Instruction = operation + where operands live. Addressing mode = the rule that computes the effective address (EA). PC drives sequencing, branches overwrite PC.</div>
+<div class="d"><b class="t">Derive</b><ol><li>Modes: Immediate (value in instr), Register (in reg), Direct EA=LOC, Reg-indirect EA=[R], Indirect EA=[[LOC]], Index EA=X+[R], Relative EA=PC+X, Autoinc (R)+ use then add, Autodec -(R) subtract then use.</li><li>Endian: word 0x12345678 at 1000. Big: 12 34 56 78. Little: 78 56 34 12.</li><li>Loop program: init count, clear sum, pointer → loop body (Add (R2)+,R0 ; Decrement ; Branch&gt;0) → store.</li><li>n-address code: 3-addr one op per instr; 2-addr dest=dest op src; 1-addr via accumulator + temp; 0-addr via postfix (PUSH operands, op pops two).</li><li>RISC: only Load/Store touch memory, so A+B = Load, Load, Add, Store.</li></ol></div>
+<div class="e"><b class="t">Examples</b>Q49 X=(A+B)×(C+D). 0-addr: PUSH A, PUSH B, ADD, PUSH C, PUSH D, ADD, MUL, POP X.<br>Q48 CISC: Move C,A ; Add C,B. RISC: Load R2,A ; Load R3,B ; Add R4,R2,R3 ; Store R4,C.</div>
+<div class="c"><b class="t">Check</b>Every register initialised? Pointer incremented by word size (4)? Branch tests the flag you just set?</div>
+</div></details>
+
+<details><summary>M9 · Computer arithmetic (Booth, division, IEEE 754, FP add) · Q50–55</summary><div class="b">
+<div class="a"><b class="t">Core abstraction</b>Multiply = shift and add; divide = shift and subtract. Booth: a run of 1s = 2^(k+1) − 2^j, so one subtract at the start and one add at the end of the run. IEEE: number = ±1.M × 2^(E−bias).</div>
+<div class="d"><b class="t">Derive</b><ol><li><b>Booth</b>: A=0, Q=multiplier, Q−1=0, M=multiplicand. Repeat n times on (Q0,Q−1): 10 → A−M; 01 → A+M; 00/11 → nothing; then arithmetic shift right A,Q,Q−1.</li><li><b>Restoring division</b>: A=0, Q=dividend. Repeat n: shift A,Q left; A=A−M; if A&lt;0 → q0=0 and restore (A+M), else q0=1. Non-restoring: if A≥0 subtract else add, fix remainder at the end.</li><li><b>IEEE single</b>: binary → normalise 1.xxx × 2^e → sign; E = e+127 (8 bits); M = bits after the point padded to 23.</li><li><b>FP add</b>: align exponents (shift smaller right) → add mantissas → normalise → round.</li></ol></div>
+<div class="e"><b class="t">Examples</b>Q50 (+7)×(−3): M=0111, −M=1001, Q=1101 → AQ = 1110 1011 = −21.<br>Q52 15÷4: quotient 0011 = 3, remainder 00011 = 3.<br>Q53 −13.75 = 1101.11 = 1.10111×2³ → 1 10000010 1011100… = 0xC15C0000.<br>Q54 9.75+0.5625: shift by 4 → 1.0100101×2³ = 10.3125.</div>
+<div class="c"><b class="t">Check</b>Booth: n cycles, ASR keeps sign, result = M×Q by decimal. Division: dividend = divisor×Q + R.</div>
+</div></details>
+
+<details><summary>M10 · Control unit (datapath, hardwired, microprogrammed) · Q56–63</summary><div class="b">
+<div class="a"><b class="t">Core abstraction</b>Control unit = an FSM whose outputs are datapath control signals and whose inputs are status flags. Hardwired = that FSM in gates/FFs (fast, rigid). Micro-programmed = the same FSM stored in a ROM, one word per state (slower, flexible).</div>
+<div class="d"><b class="t">Derive (from an ASM chart)</b><ol><li>List datapath parts (registers, adder/sub, counter) and the control signals each needs.</li><li>Draw states: idle → init → decision → action → shift/count → done.</li><li><b>Hardwired</b> (one-hot): D(Si) = OR of [previous state · branch condition]. Outputs = state bits.</li><li><b>Micro</b>: each state becomes a microinstruction = control bits + condition select + next address. µPC increments or loads branch target.</li><li>Horizontal = 1 bit per signal (wide, fast). Vertical = encoded fields (narrow, slow).</li></ol></div>
+<div class="e"><b class="t">Examples</b>Q57 Booth controller: S2 decides on Q0Q−1 (01→S3 add, 10→S4 sub, else S5), S5 = ASR + C−1, Z=1 → S6 done. D(S3) = S2·Q0'·Q−1.<br>Q60 same as 7 ROM words.<br>Q63 single bus: fetch = PCout,MARin,Read,Add,Zin → Zout,PCin,Yin,WMFC → MDRout,IRin.</div>
+<div class="c"><b class="t">Check</b>Every state has exit for every condition? Each control signal asserted in exactly the right state?</div>
+</div></details>
+
+<details><summary>M11 · Cache and memory hierarchy · Q64–69</summary><div class="b">
+<div class="a"><b class="t">Core abstraction</b>Locality (temporal, spatial) means a small fast copy of memory works. Mapping function = rule deciding which cache line a memory block may occupy.</div>
+<div class="d"><b class="t">Derive</b><ol><li>Word bits = log2(block size). Lines = cache size / block size.</li><li>Direct: block(line) bits = log2(lines); tag = address − block − word. Associative: no index, tag = address − word. k-way: sets = lines/k; set bits = log2(sets).</li><li>Trace: direct line = block mod lines; set-assoc set = block mod sets; evict by FIFO (oldest) or LRU (least recently used).</li><li>AMAT = hit time + miss rate × miss penalty. Write-through: write both. Write-back: dirty bit, write on eviction.</li></ol></div>
+<div class="e"><b class="t">Examples</b>Q66 64K memory, 1K cache, 16-word block: direct Tag6|Block6|Word4; associative Tag12|Word4; 4-way Tag8|Set4|Word4.<br>Trace 0,8,0,6,8 on 4 blocks: direct 0 hits; 2-way LRU 1 hit.<br>Q67 string 7,0,1,2,0,3,0,4,2,3,0,3,2 with 3 frames: FIFO 10 misses, LRU 9.<br>Q68 2 + 0.05×50 = 4.5 ns.</div>
+<div class="c"><b class="t">Check</b>Tag+index+offset = address bits. Hits + misses = accesses.</div>
+</div></details>
+
+<details><summary>M12 · I/O and parallelism (polling, interrupt, DMA, pipeline, Flynn) · Q70–77</summary><div class="b">
+<div class="a"><b class="t">Core abstraction</b>Both topics remove waiting. I/O: polling → interrupt → DMA progressively takes the CPU out of the loop. Parallelism: overlap work (pipeline), do many data at once (vector/SIMD), or use many CPUs (MIMD, UMA/NUMA).</div>
+<div class="d"><b class="t">Derive</b><ol><li>Polling: loop read status → test ready → branch → read data. Interrupt: finish instr → save PC → ISR → return. Vectored = device supplies ISR address. DMA: CPU gives start addr + count + direction, DMA moves block, interrupts at end.</li><li>Pipeline: k stages, n tasks. Non-pipe = n·k·tp. Pipe = (k+n−1)·tp. Speed-up = nk/(k+n−1) → k.</li><li>Hazards: structural → duplicate hardware; data (RAW) → forwarding/stall; control → prediction/flush.</li><li>Flynn: SISD, SIMD (vector/GPU), MISD (rare), MIMD (multicore). UMA same latency; NUMA local fast, remote slow.</li></ol></div>
+<div class="e"><b class="t">Examples</b>Q74 k=5, n=100: 104 cycles vs 500, speed-up 4.81.<br>Q71 polling vs interrupt table: CPU wasted vs useful work.</div>
+<div class="c"><b class="t">Check</b>Speed-up must be less than k. Hazard answer names the fix.</div>
+</div></details>
+
+<p class="k">Drill: close the page, write abstraction + derivation for each module from memory, then redo one example with new numbers. Marks come from the steps.</p>
+</body></html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>CES 2103 Data Analytics: Module Guide</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><link rel="icon" href="data:,">
+<style>
+:root{--bg:#fff;--fg:#1c1b22;--card:#f3f2f8;--ac:#5b3df5;--mut:#666;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#13121a;--fg:#ecebf4;--card:#1d1c28;--ac:#9d8bff;--mut:#a09fb3}}
+:root[data-theme="dark"]{--bg:#13121a;--fg:#ecebf4;--card:#1d1c28;--ac:#9d8bff;--mut:#a09fb3}
+body{margin:0 auto;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif;padding:12px;max-width:760px}
+h1{font-size:20px;margin:6px 0}nav{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+nav a{background:var(--card);color:var(--ac);border:1px solid var(--ac);border-radius:14px;padding:3px 10px;font-size:13px;text-decoration:none}
+details{background:var(--card);border-radius:10px;margin:10px 0;padding:8px 12px}summary{font-weight:700;cursor:pointer}
+.a{border-left:4px solid var(--ac);padding-left:8px;margin:8px 0}.x{color:var(--mut);font-size:13.5px}
+.c{margin:10px 0 4px;padding-top:6px;border-top:1px dashed var(--mut)}.c b{color:var(--ac)}ol{padding-left:20px;margin:4px 0}
+</style></head><body>
+<h1>CES 2103 Data Analytics: modules</h1>
+<p class="x">Each module = <b>core abstraction</b>, then per concept: <b>abstraction</b> → <b>derive it</b>. No code. Weights from your handout (lecture hours, of 48): M1 4 · M2 8 · M3 16 · M4 10 · M5 10. Suggested order: M4 → M3b → M5 → M3a → M2 → M1 (mechanical first, descriptive last).</p>
+<nav id="nav"></nav><div id="app"></div>
+<script>
+const M=[
+{id:'m4',t:'M4 · Association rules and pattern mining (10 h)',a:'Count which items occur together. <b>Frequent</b> = passes min support. <b>Rule</b> = conditional probability (confidence). The Apriori property (a frequent set has only frequent subsets) lets you prune the search.',
+k:[
+['Support and confidence','Support = how common the set is. Confidence = how reliable "A then B" is.',['support(A∪B) = count(A∪B) / N','confidence(A⇒B) = count(A∪B) / count(A), because it is P(B given A)','Strong rule = passes both min_sup and min_conf']],
+['Apriori levels','Grow itemsets one size at a time; throw away anything that can’t be frequent.',['Count every single item → drop those below min_sup → L1','Join Lk−1 with itself to make candidates of size k','Prune any candidate that has an infrequent subset (Apriori property)','Count survivors against the transactions → Lk','Repeat until no candidates remain; answer = union of all L']],
+['Rule generation','Every frequent set splits into "left ⇒ right" in all possible ways.',['Take a frequent set of size k','List all 2^k − 2 non-empty proper subsets s','For each: s ⇒ (set − s), confidence = count(set) / count(s)','Keep those at or above min_conf']],
+['FP-growth','Compress the database into a prefix tree so no candidates are ever generated.',['Scan 1: count items, drop infrequent, sort each transaction by descending frequency','Scan 2: insert transactions; shared prefixes share nodes and add counts','For each item bottom-up: collect its conditional pattern base (prefix paths with its count)','Build the conditional tree, keep items meeting min_sup, combine with the item to output patterns']],
+['Vertical format (Eclat) and efficiency tricks','Store item → set of transaction IDs; support of a join is an intersection.',['TID-set of A∪B = TID-set(A) ∩ TID-set(B); support = its size','Apriori speed-ups: hashing, transaction reduction, partitioning, sampling, dynamic itemset counting']],
+['Closed and maximal','Compress the list of frequent sets by what they imply.',['Closed: no superset has the same support','Maximal: no superset is frequent at all','So Maximal ⊆ Closed ⊆ Frequent; closed keeps support info, maximal does not']],
+['Pattern evaluation','Support and confidence can mislead, so test real dependence.',['lift = P(A∪B) / (P(A)·P(B)): above 1 positive, 1 independent, below 1 negative','Lift and χ² are affected by null transactions (rows with neither item)','Null-invariant measures: Kulczynski (average of the two confidences), all_conf, max_conf, cosine','Imbalance ratio IR = |sup(A) − sup(B)| / (sup(A)+sup(B)−sup(A∪B)); judge Kulc together with IR']]]},
+{id:'m3b',t:'M3b · Hypothesis tests, χ², ANOVA (6 h)',a:'Assume the boring explanation (H₀). Measure how far the data sits from it in standard-error units. If that distance beats the critical value, the boring explanation is too unlikely.',
+k:[
+['The 5-step test','One template for every test; only the statistic changes.',['State H₀ (always has "=") and H₁ (decides the tail), pick α','Statistic = (estimate − value under H₀) / standard error','Find the critical value for α and the tail','Compare: beyond critical → reject H₀, otherwise fail to reject (never "accept")','Say it in words about the problem']],
+['Errors and choice of test','Two ways to be wrong, and one trade-off.',['Type I = reject a true H₀ (probability α); Type II = miss a false H₀ (β); power = 1 − β','Lower α → harder to reject → β rises','z if σ known or n large; t if σ unknown and n small, df = n−1 (two-sample pooled: n₁+n₂−2)','Critical z: 5% two-tail 1.96, 5% one-tail 1.645, 1% two-tail 2.576']],
+['χ² test','Compare observed counts with the counts you would see if H₀ were true.',['Independence: expected E = (row total × column total) / N','χ² = Σ (O − E)² / E, so big gaps and small E score high','df = (r−1)(c−1) for tables, k−1 for goodness of fit','Above critical (5%: df1 3.84, df2 5.99, df3 7.81) → reject H₀']],
+['ANOVA','Is the spread between group means bigger than the spread you expect from noise inside groups?',['Total variation splits into between-group SSB and within-group SSW','SSB = Σ nᵢ(group mean − grand mean)²; SSW = Σ squared deviations inside each group','MSB = SSB/(k−1), MSW = SSW/(N−k)','F = MSB/MSW; F above the table value → at least one mean differs','Two-way adds a second factor B and an interaction row (does A’s effect depend on B?)']]]},
+{id:'m5',t:'M5 · Time series and forecasting (10 h)',a:'A series = trend + seasonality + cycle + noise. A forecast is a weighted memory of the past. Judge any method by its error on data it hasn’t seen.',
+k:[
+['Components','Four layers stacked into one line.',['Trend (long direction), seasonal (fixed period), cyclical (irregular long waves), irregular (noise)','Additive T+S+C+I when swings stay the same size; multiplicative T×S×C×I when swings grow with the level']],
+['Accuracy measures','Average the mistakes in different ways.',['error e = actual − forecast','MAD = mean |e|; MSE = mean e²; RMSE = √MSE (same units as data)','MAPE = mean(|e|/actual) × 100, a percentage','Choose the method with the lowest error on held-out data']],
+['Moving average → SES','Each step adds one idea to "average the past".',['Moving average of last k: larger k = smoother but slower to react','SES gives all past points weights that decay: F(t+1) = αY(t) + (1−α)F(t)','Start with F2 = Y1; large α reacts fast, small α smooths','SES assumes no trend and no season']],
+['Holt (trend) and Holt-Winters (season)','Give trend and season their own smoothed state.',['Holt: level L and trend T; L = αY + (1−α)(L₋₁+T₋₁); T = β(L−L₋₁) + (1−β)T₋₁; F(t+m) = L + m·T','Holt-Winters adds a seasonal index S with γ and period s','Additive: remove S by subtracting; multiplicative: by dividing, and F = (L + m·T)·S']],
+['Trend by regression','Fit a straight line to time.',['b = Sxy / Sxx, a = Ȳ − b·t̄','Forecast = a + b·t']],
+['Stationarity and ARIMA','ARIMA is regression on your own past, after making the series steady.',['Stationary = constant mean, constant variance, covariance depends only on lag; difference to remove trend','AR(p) uses past values; MA(q) uses past errors; ARIMA(p,d,q) differences d times first','Identify: ACF cuts at q and PACF tails off → MA(q); PACF cuts at p and ACF tails off → AR(p); both tail off → ARMA']]]},
+{id:'m3a',t:'M3a · Data preparation (≈10 h)',a:'Models need data that is complete, clean, consistent, comparable and small. Each technique fixes one of those five failures.',
+k:[
+['Missing values','Pick the fill that loses least information.',['Ignore the tuple (cheapest, wasteful) · fill manually · global constant','Mean or median, ideally of the same class · most probable value by regression or tree (best)']],
+['Noise: binning','Smooth by letting neighbours agree.',['Sort the values','Split into bins: equal-depth (same count) or equal-width (same range)','Replace each value by its bin mean, bin median, or nearer bin boundary','Alternatives: regression, clustering']],
+['Integration and redundancy','Merged sources repeat or clash.',['Entity identification: same real thing under different names','Redundant attribute: correlation r for numeric, χ² for nominal']],
+['Normalisation','Put attributes on a common scale.',['min-max: (v − min)/(max − min), fixed range, hurt by outliers','z-score: (v − mean)/SD, good when range unknown or outliers exist','decimal scaling: divide by 10^j, smallest j giving max|v′| below 1']],
+['Discretisation','Turn numbers into intervals.',['Binning, histogram, clustering, decision tree (supervised), concept hierarchy']],
+['Reduction and sampling','Smaller data, same story.',['Dimensionality: PCA, attribute subset selection (forward, backward, tree)','Numerosity: regression, log-linear, histograms, clustering, sampling, cube aggregation','Sampling: SRSWOR, SRSWR, cluster, stratified']],
+['PCA','Rotate to new uncorrelated axes, ordered by how much variance they carry; unsupervised, so scale first.',['Centre and scale the data, build covariance matrix C','Solve det(C − λI) = 0 for eigenvalues λ (sum of λ = trace)','Share of a component = λ / Σλ','Eigenvector for λ: solve (C − λI)v = 0, normalise','Keep components until about 90% cumulative variance, project Z = (X − mean)·W']],
+['Decision tree and information gain','Choose the question that removes the most uncertainty.',['Entropy Info(D) = −Σ p·log₂p measures impurity','For attribute A: Info_A(D) = Σ (|Dⱼ|/|D|)·Info(Dⱼ), a weighted average over its values','Gain(A) = Info(D) − Info_A(D)','Split on the largest gain; recurse on each branch']]]},
+{id:'m2',t:'M2 · Data exploration (8 h)',a:'Describe one column by centre, spread and shape. Relate two columns using the pair of types they are.',
+k:[
+['Variable types','Ask four questions in order.',['Just labels? nominal. Order matters? ordinal. Equal gaps but no true zero? interval. True zero? ratio','Discrete (countable) vs continuous (measured)']],
+['Centre and shape','Mean uses every value; median ignores extremes.',['Outliers pull the mean, so median is robust','Right skew: mean > median > mode; left skew reverses it']],
+['Spread','Typical distance from the centre.',['Sort, find the mean, deviations, square them, add','Sample variance = sum of squares / (n−1) (the sample mean already used one degree of freedom); SD = √variance','IQR = Q3 − Q1; outlier if below Q1 − 1.5·IQR or above Q3 + 1.5·IQR']],
+['z-score and confidence interval','Distance in SD units, then a range built from it.',['z = (x − μ)/σ: how many SDs from the mean; normal: 68–95–99.7','CI = estimate ± critical value × standard error (σ/√n)','z* (90% 1.645, 95% 1.96, 99% 2.576) when σ known or n large; t* with df = n−1 and s when σ unknown and n small']],
+['Correlation','Do two numbers move together?',['r = Sxy / √(Sxx·Syy), where each S is a sum of deviation products','Range −1 to 1; only measures linear links; r² = share of variance explained']],
+['Choosing a plot','Plot by the pair of types.',['numeric–numeric: scatter · category–category: contingency table · category–numeric: box plots']]]},
+{id:'m1',t:'M1 · Introduction to analytics (4 h)',a:'Analytics turns data into a decision. The type of analytics is decided by the question being asked.',
+k:[
+['Three types','Find the question word in the scenario.',['What happened → descriptive (reports, dashboards, averages)','What will happen → predictive (regression, classification, forecasts)','What should we do → prescriptive (optimisation, simulation, recommendation)','Exam shape: name the type, justify in one sentence']],
+['Process','A loop, not a line.',['Define problem → collect → prepare → explore → model → interpret and act','Later steps can send you back to earlier ones']],
+['Data sources','Three independent questions.',['Who collected it for this question? primary vs secondary','Where from? internal vs external','What shape? structured vs unstructured']]]}];
+const nav=document.getElementById('nav'),app=document.getElementById('app');
+M.forEach((m,i)=>{const a=document.createElement('a');a.href='#'+m.id;a.textContent=m.t.split(' ')[0];nav.append(a);
+const d=document.createElement('details');d.id=m.id;if(!i)d.open=true;
+d.innerHTML='<summary>'+m.t+'</summary><div class="a"><b>Core abstraction:</b> '+m.a+'</div>'+m.k.map(k=>'<div class="c"><b>'+k[0]+'</b><br><span class="x">'+k[1]+'</span><ol>'+k[2].map(s=>'<li>'+s+'</li>').join('')+'</ol></div>').join('');app.append(d)});
+function op(){const e=document.getElementById(location.hash.slice(1));if(e&&e.tagName=='DETAILS')e.open=true}
+addEventListener('hashchange',op);op();
+</script></body></html>

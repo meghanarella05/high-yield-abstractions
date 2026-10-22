@@ -1,0 +1,83 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>DCN: Module Guide</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><link rel="icon" href="data:,">
+<style>
+:root{--bg:#fff;--fg:#1c1b22;--card:#f3f2f8;--ac:#5b3df5;--mut:#666;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#13121a;--fg:#ecebf4;--card:#1d1c28;--ac:#9d8bff;--mut:#a09fb3}}
+:root[data-theme="dark"]{--bg:#13121a;--fg:#ecebf4;--card:#1d1c28;--ac:#9d8bff;--mut:#a09fb3}
+body{margin:0 auto;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif;padding:12px;max-width:760px}
+h1{font-size:20px;margin:6px 0}nav{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+nav a{background:var(--card);color:var(--ac);border:1px solid var(--ac);border-radius:14px;padding:3px 10px;font-size:13px;text-decoration:none}
+details{background:var(--card);border-radius:10px;margin:10px 0;padding:8px 12px}summary{font-weight:700;cursor:pointer}
+.a{border-left:4px solid var(--ac);padding-left:8px;margin:8px 0}.x{color:var(--mut);font-size:13.5px}
+.c{margin:10px 0 4px;padding-top:6px;border-top:1px dashed var(--mut)}.c b{color:var(--ac)}ol{padding-left:20px;margin:4px 0}
+</style></head><body>
+<h1>Data Communication and Networks: modules</h1>
+<p class="x">Each module = <b>core abstraction</b>, then per concept: <b>abstraction</b> → <b>derive it</b>. No code. Weights (syllabus hours): network layer M5–M7 21 · M1 8 · M2–M4 8 · M8 7 · M9 4. Your order: M5 → M6 → M3 → M4 → M1 → M8 → M7 → M2 → M9 (mechanical first, descriptive last).</p>
+<nav id="nav"></nav><div id="app"></div>
+<script>
+const M=[
+{id:'m5',t:'M5 · IPv4 addressing, subnetting, VLSM, NAT',a:'An address = network part + host part, and the mask says where the dividing line is. Every subnetting question is "move the line" or "find which block I’m in".',
+k:[
+['Network, broadcast, range','Blocks of size 2^h sit at multiples of 2^h.',['Block size = 2^(32 − prefix); find the octet where the mask stops','Network = largest multiple of the block that is ≤ the address in that octet','Broadcast = network + block − 1 (all host bits 1)','Hosts = network+1 … broadcast−1, usable count 2^h − 2']],
+['Classful and special addresses','First octet decides the class.',['A 0–127 (/8), B 128–191 (/16), C 192–223 (/24), D 224–239 multicast, E reserved','0.0.0.0 this host · 127/8 loopback · 255.255.255.255 limited broadcast','Private: 10/8, 172.16/12, 192.168/16 · link-local 169.254/16']],
+['Equal subnets','Borrow host bits to make network bits.',['Bits to borrow b = ceil(log2 N subnets)','New prefix = old prefix + b','Hosts per subnet = 2^(32 − new prefix) − 2']],
+['VLSM','Different-sized subnets from one block; size each to need.',['For each requirement take the smallest power of 2 ≥ hosts + 2 (network and broadcast)','Sort largest first, because a block must start at a multiple of its own size, so big blocks first keeps everything aligned and wastes nothing','Allocate contiguously; next block starts where the previous ended']],
+['CIDR and NAT','Aggregation and address sharing.',['Supernet: blocks must be contiguous, a power-of-2 in count, and the first aligned to the total size','NAT swaps private↔public addresses; PAT also swaps ports so many hosts share one public IP','Direct delivery: destination on my network, ARP for it. Indirect: ARP for the router (next hop)']]]},
+{id:'m6',t:'M6 · IP datagram, fragmentation, ARP, ICMP, IPv6',a:'A datagram is a self-contained envelope. Links have a maximum frame size (MTU), so big envelopes are cut into pieces that each carry enough header to be reassembled, and only the destination reassembles.',
+k:[
+['Header fields by purpose','Group the fields by the job they do.',['Where: source and destination address','How long: IHL (×4 bytes), total length, TTL','Pieces: ID, flags (DF, MF), fragment offset','What is inside: protocol; header checksum covers the header only and is recomputed at every router because TTL changes']],
+['Fragmentation','Cut data so every piece fits the MTU and offsets stay in 8-byte units.',['Max data per fragment = floor((MTU − header)/8) × 8','Split data into pieces of that size; last piece takes the remainder','Offset = bytes of data before it / 8','MF = 1 for all but the last; ID same in all; total length = data + header','Check: fragment data adds back to the original data']],
+['ARP and ICMP','ARP turns IP into MAC; ICMP reports problems.',['ARP: broadcast "who has this IP", unicast reply with MAC','ICMP: echo (ping), destination unreachable, time exceeded (TTL hit 0, how traceroute works), redirect, parameter problem']],
+['IPv6','Fix address exhaustion and simplify routers.',['128-bit address, fixed 40-byte header, no header checksum, no fragmentation by routers, extension headers','Types: unicast, multicast, anycast','Compress: drop leading zeros per group, then replace the longest run of zero groups with :: (once only)','Transition: dual stack, tunnelling, header translation']]]},
+{id:'m3',t:'M3 · Framing, error detection and correction',a:'Add redundancy so valid codewords are far apart. The receiver checks "is this still a valid codeword?" With minimum distance d you detect d−1 errors and correct floor((d−1)/2).',
+k:[
+['Parity','One extra bit to fix the count of 1s.',['Even parity: choose the bit so the total number of 1s is even','Catches any odd number of flipped bits, misses even numbers','2-D parity adds a column of row parities and catches more']],
+['CRC','Division with XOR instead of subtraction.',['Generator has r+1 bits (x³+x+1 → 1011, r = 3)','Append r zeros to the data','Divide by the generator using XOR (no borrow)','The r-bit remainder replaces the zeros; that is the codeword','Receiver divides the whole codeword: remainder 0 → accept; catches all bursts up to length r']],
+['Internet checksum','Add the words, complement the total.',['Sum the words in one’s complement: any carry out wraps round to the low end','Checksum = complement of the sum (sender sets the field to 0 first)','Receiver adds all words including checksum: all 1s (complement 0) → accept']],
+['Hamming code','Several overlapping parities whose pattern points at the bad bit.',['Choose smallest r with 2^r ≥ m + r + 1','Parity bits sit at positions 1, 2, 4, 8…','Parity bit p covers every position whose binary form contains p','Set each parity for even parity over what it covers','Receiver recomputes the checks; reading c4 c2 c1 as binary gives the error position, flip it']],
+['Framing and bit stuffing','The receiver must find frame boundaries.',['Byte-oriented: stuff an escape byte; bit-oriented (HDLC flag 01111110): after five 1s insert a 0','Receiver deletes the 0 after five 1s, so the flag never appears inside data']]]},
+{id:'m4',t:'M4 · Flow control, MAC, CSMA/CD, Ethernet',a:'Two problems: keep the pipe full without overrunning the receiver (flow control), and let many stations share one medium (MAC). Both come from comparing frame time with propagation time.',
+k:[
+['Utilisation','Fraction of time the sender is sending.',['Tf = L/B, Tp = d/v','Stop-and-wait: U = Tf / (Tf + 2Tp), because it waits one full round trip','Window N: U = N·Tf / (Tf + 2Tp), capped at 1','Window for 100%: N = 1 + 2Tp/Tf']],
+['Go-Back-N vs Selective Repeat','Same pipeline, different recovery.',['GBN: sender window ≤ 2^m − 1, receiver window 1; on error resend the lost frame and everything after','SR: both windows ≤ 2^(m−1); resend only the lost frame','Sequence numbers needed: GBN N+1, SR 2N','Piggybacking: ACK rides on reverse data']],
+['CSMA/CD','Listen, send, and if you hear a collision stop and retry.',['Sense the line, send when idle; on collision stop and send a jam','Wait K slots with K random in [0, 2^n − 1] after the n-th collision (n capped at 10, give up at 16)','A collision must be detected before the frame ends, so min frame bits = 2·Tp·B','Efficiency ≈ 1/(1 + 6.44a), a = Tp/Tf']],
+['Access methods','Taxonomy.',['Random: ALOHA, CSMA, CSMA/CD (wired), CSMA/CA (wireless, avoids with RTS/CTS)','Controlled: reservation, polling, token passing']],
+['Ethernet frame','Fields and size limits.',['Preamble 7 B, SFD 1 B, dest 6, src 6, type/length 2, data 46–1500, FCS 4','Frame is 64–1518 B; data below 46 is padded','Address: LSB of first byte 1 = multicast; all F = broadcast']]]},
+{id:'m1',t:'M1 · Signals, capacity, line coding, multiplexing',a:'A channel has a speed limit set by bandwidth, number of signal levels and noise. Every numerical here is "which limit applies, and what does it leave me".',
+k:[
+['Bit rate and baud','Each signal element carries r bits.',['baud = bit rate / r','Signal elements needed = 2^r']],
+['Nyquist and Shannon','Noiseless limit vs noisy limit; the real limit is the smaller.',['Nyquist: C = 2·B·log₂L, so L = 2^(C/2B); round levels up to a power of 2','Shannon: C = B·log₂(1 + SNR), SNR = 10^(SNR_dB/10)','Use Shannon for the ceiling, Nyquist to pick levels']],
+['Sampling and PCM','Capture an analog signal as numbers.',['Sample at fs ≥ 2·fmax','PCM = sample → quantize → encode; bit rate = fs × bits per sample','Non-uniform quantization uses small steps where the signal is weak']],
+['Performance','Rate versus delay.',['Throughput = bits actually delivered per second','Latency = propagation + transmission + queuing + processing','Delay-bandwidth product = BW × delay = bits in the pipe']],
+['Line coding','Why signals need transitions.',['Goals: synchronisation, no DC component, error detection','NRZ loses sync on long runs of equal bits','Manchester: mid-bit transition always; 0 = high→low, 1 = low→high','Differential Manchester: mid-bit transition always (clock); bit 0 = transition at start, bit 1 = none','Both need twice the signal rate of NRZ']],
+['Modulation and multiplexing','Share a link.',['ASK amplitude, FSK frequency, PSK phase, QAM amplitude and phase','TDM: link rate = sum of channels; slot = bit time / channels','FDM: total = channels × bandwidth + (channels − 1) × guard band; WDM = light']]]},
+{id:'m8',t:'M8 · Transport: TCP and UDP',a:'IP delivers host to host, best effort. Transport adds ports (process to process) and, for TCP, reliability, flow control and congestion control.',
+k:[
+['UDP vs TCP','Choose by what the application needs.',['UDP: connectionless, unreliable, 8-byte header; for DNS, DHCP, streaming','TCP: connection-oriented, reliable byte stream, full duplex, 20–60 byte header, flags URG ACK PSH RST SYN FIN']],
+['Handshake, seq and ack','Numbers track bytes.',['Open: SYN → SYN+ACK → ACK; each side picks an initial sequence number','ack = next byte expected = seq + data bytes received','SYN and FIN each consume one sequence number','Close: FIN/ACK in each direction, then time-wait 2×MSL']],
+['Flow and error control','Receiver sets the pace; loss is repaired.',['Receiver advertises rwnd; sender window = min(rwnd, cwnd)','Cumulative ACKs; retransmit on timeout or on 3 duplicate ACKs (fast retransmit)']],
+['Congestion window','Probe for capacity, back off on loss.',['Slow start: cwnd doubles each RTT until ssthresh','Then congestion avoidance: +1 per RTT','Timeout: ssthresh = cwnd/2, cwnd = 1, restart slow start','3 dup ACKs (Reno): ssthresh = cwnd/2, cwnd = ssthresh, continue linearly']],
+['Timers and RTO','Timeout must follow measured delay.',['EstRTT = 0.875·EstRTT + 0.125·Sample','DevRTT = 0.75·DevRTT + 0.25·|Sample − EstRTT|; RTO = EstRTT + 4·DevRTT','Other timers: persistence (zero window), keepalive, time-wait']]]},
+{id:'m7',t:'M7 · Routing',a:'Forwarding is a per-packet table lookup (longest prefix match). Routing is how the table gets built: find least-cost paths either by asking neighbours (distance vector) or by knowing the whole map (link state).',
+k:[
+['Dijkstra (link state)','Grow a set of finished nodes outward from the source.',['dist[source] = 0, all others infinity, all unvisited','Pick the unvisited node with smallest dist and mark it visited','Relax its neighbours: if dist[u] + w < dist[v], update dist[v] and prev[v]','Repeat until all visited; path = follow prev back from target','Tabulate one row per round']],
+['Distance vector (Bellman-Ford)','Each router trusts its neighbours’ summaries.',['Dx(y) = min over neighbours v of c(x,v) + Dv(y)','Recompute when a neighbour’s vector or a link cost changes','Count-to-infinity is reduced by split horizon (don’t advertise a route back where it came from), poison reverse and triggered updates']],
+['Protocol map','Which protocol where.',['Inside an AS: RIP (distance vector, hop count, max 15), OSPF (link state, cost, areas)','Between ASes: BGP (path vector, over TCP 179)']]]},
+{id:'m2',t:'M2 · Layers, topology, devices',a:'Layering: each layer talks to its peer using its own header. Going down adds headers (encapsulation), going up strips them. Each layer has its own PDU, address and device.',
+k:[
+['Layer map','OSI seven, TCP/IP four.',['Application, Presentation, Session, Transport, Network, Data link, Physical','TCP/IP: Application (5–7), Transport, Internet, Network access (1–2)','PDUs: message, segment/datagram, packet, frame, bits']],
+['Devices','The layer a device reads decides what it can do.',['Repeater/hub L1 · bridge/switch L2 (splits collision domains) · router L3 (splits broadcast domains) · gateway L7','Addresses: MAC (link), IP (network), port (transport), application-specific (URL, email)']],
+['Topologies','Cost and failure behaviour.',['Bus: cheap, one cable fails all · star: hub is the weak point · ring · tree','Full mesh of n nodes: links = n(n−1)/2, ports per node = n−1']]]},
+{id:'m9',t:'M9 · Application layer: DNS, DHCP, HTTP',a:'Applications sit on transport and need three helpers: names to addresses (DNS), automatic configuration (DHCP), and a request/response protocol (HTTP).',
+k:[
+['DNS','A distributed, cached phone book.',['Hierarchy: root → TLD → authoritative; port 53 over UDP (TCP for zone transfer)','Recursive: server does all the work for the client. Iterative: server returns the next server to ask','Records A, AAAA, NS, MX, CNAME, PTR; answers cached with TTL']],
+['DHCP','A new host has no address, so it broadcasts.',['DORA: Discover (broadcast), Offer, Request, Acknowledge','Gives IP, mask, gateway, DNS server, lease; UDP 67 server, 68 client','Renewal at 50% of lease']],
+['HTTP','Stateless request/response over TCP 80 (HTTPS 443).',['Methods GET POST PUT DELETE HEAD; status 1xx info, 2xx OK, 3xx redirect, 4xx client error, 5xx server error','Non-persistent: each object costs 2 RTT (TCP setup + request); persistent reuses the connection; cookies add state']],
+['Whole-page trace','Chain all layers in order.',['DHCP (get IP) → ARP (gateway MAC) → DNS (name to IP) → TCP handshake → HTTP GET → response']]]}];
+const nav=document.getElementById('nav'),app=document.getElementById('app');
+M.forEach((m,i)=>{const a=document.createElement('a');a.href='#'+m.id;a.textContent=m.id.toUpperCase();nav.append(a);
+const d=document.createElement('details');d.id=m.id;if(!i)d.open=true;
+d.innerHTML='<summary>'+m.t+'</summary><div class="a"><b>Core abstraction:</b> '+m.a+'</div>'+m.k.map(k=>'<div class="c"><b>'+k[0]+'</b><br><span class="x">'+k[1]+'</span><ol>'+k[2].map(s=>'<li>'+s+'</li>').join('')+'</ol></div>').join('');app.append(d)});
+function op(){const e=document.getElementById(location.hash.slice(1));if(e&&e.tagName=='DETAILS')e.open=true}
+addEventListener('hashchange',op);op();
+</script></body></html>
